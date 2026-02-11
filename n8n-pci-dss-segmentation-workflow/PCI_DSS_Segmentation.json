@@ -1,0 +1,291 @@
+{
+  "name": "PCI DSS Segmentation",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -220,
+        -80
+      ],
+      "id": "2d182f64-29f2-4913-bd7a-c439df2987f6",
+      "name": "When chat message received",
+      "webhookId": "ef370eb0-d68a-4596-8305-07aae471d5c1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "={{ $now.format('yyyy-MM-dd').toDateTime() }}\n\nYou are a PCI DSS segmentation testing tool.\n\nYour task is to receive from the human the following details: segments, pentest hosts, Non-CDE and CDE information. Using these inputs and available tools, you will perform the segmentation test and share the results with the human.\n\nBefore starting the test, you must use the \"Segment_Connection_Check_Tool\" to verify access to the provided segments and pentest hosts.\n\nTo use this tool, you will need to collect the following information from the human for each pentest host:\n\nPentest Host username\n\nPentest Host IP Address\n\nSSH Password\n\nSince there are two different segments (Non-CDE and CDE), there will be two different pentest hosts. Therefore, you must request the pentest host information from the human twice, and also ask which segment (Non-CDE or CDE) each host belongs to.\n\nAfter collecting this information, you will send it in JSON format to the \"Segment_Connection_Check_Tool\" to run the connection test. If the SSH connection is successful, you will return a confirmation response to the human."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        220,
+        -80
+      ],
+      "id": "f74a264e-acbb-4dde-b04c-91718019644e",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "name": "NMAP_Agent",
+        "workflowId": {
+          "__rl": true,
+          "value": "NPFHBf5QFpUuETF9",
+          "mode": "list",
+          "cachedResultName": "NMAP Tool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        300,
+        160
+      ],
+      "id": "d2750453-ee93-40c2-8f98-ea20f70e8e35",
+      "name": "NMAP Tool"
+    },
+    {
+      "parameters": {
+        "name": "Segmentation_Report_Tool",
+        "workflowId": {
+          "__rl": true,
+          "value": "8UgaAIvGU5oElLMu",
+          "mode": "list",
+          "cachedResultName": "Segmentation Report"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        420,
+        200
+      ],
+      "id": "03c8c492-a257-46ce-a8f7-c3892ab6516b",
+      "name": "Segmentation Report Tool"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        20,
+        140
+      ],
+      "id": "c9b5653f-f60e-4532-b142-cf28cd4df6bc",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "oc9z1uqgggmDPBNx",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        160,
+        200
+      ],
+      "id": "7032df08-9159-4525-9652-5bbce69274cf",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "Ox3VRE8HfmFQz1hb",
+          "name": "Postgres account n8n user"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "Segment_Connection_Check_Tool",
+        "workflowId": {
+          "__rl": true,
+          "value": "7ChQN6qeXeFDXO8R",
+          "mode": "list",
+          "cachedResultName": "Segment Connection Check"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        580,
+        160
+      ],
+      "id": "5b40f049-834a-4fe0-9432-ea418c6c3fb2",
+      "name": "Segment Connection Check"
+    },
+    {
+      "parameters": {
+        "content": "# Process Steps\n1. Ask segment information from the human \n2. Use Segment Connection Check tool and if connection is successful that workflows store it to DB.\n3. Ask for more segment information from the human and keep the steps 1-3 until you get all segments connection information.\n4. Ask network information from the human and store it to DB with using Network Information tool.\n5. Repeat step 4 until you get all network information from the human.\n6. After that for each of the network scanning you should run NMAP tool to perform segmentation tests.\n7. Perform step 5 until ensure that you performed scanning on all networks.\n8. Use Segmentation Report Tool to make queries to answer questions related performed scanning by the human",
+        "height": 420,
+        "width": 740
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        680,
+        -480
+      ],
+      "typeVersion": 1,
+      "id": "345b5605-b910-487c-8700-147f07ba3e51",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "name": "Network_Information_Tool",
+        "workflowId": {
+          "__rl": true,
+          "value": "qMHDOjMo7m4oFlkY",
+          "mode": "list",
+          "cachedResultName": "Network Information Tool"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [
+        760,
+        200
+      ],
+      "id": "c16dca54-e5c7-4edd-860d-ca0e3a652a6f",
+      "name": "Network Information Tool"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NMAP Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segmentation Report Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Segment Connection Check": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Network Information Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e563039a-402b-469a-9d63-4c8c98cb4839",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0d4d7765a24d4de56d5156cfda2249198ce4f0ce70e514009ea82e1c4766b22"
+  },
+  "id": "cCh6mdrSeXVhGJA1",
+  "tags": []
+}

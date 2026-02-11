@@ -1,0 +1,109 @@
+{
+  "name": "Segmentation Report",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -460,
+        -140
+      ],
+      "id": "cd407022-621f-476c-85a6-6a3d49430e66",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -220,
+        -140
+      ],
+      "id": "5b0d6133-07bf-44ee-8857-e62cbd51ddd1",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        -140
+      ],
+      "id": "c3f0d6a8-b734-41ef-98f6-96002f4ea1b0",
+      "name": "MongoDB",
+      "credentials": {
+        "mongoDb": {
+          "id": "amquX4UlKtVPQEfD",
+          "name": "MongoDB cve database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "convertToHtmlTable",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        -140
+      ],
+      "id": "d46e5176-7abe-4b12-aacf-2e96bf4a6537",
+      "name": "HTML"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3ec3de40-c67d-4ab4-89a4-fe809cb7c9ad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0d4d7765a24d4de56d5156cfda2249198ce4f0ce70e514009ea82e1c4766b22"
+  },
+  "id": "8UgaAIvGU5oElLMu",
+  "tags": []
+}

@@ -1,0 +1,61 @@
+{
+  "name": "Segment Connection Check",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "jsonExample",
+        "jsonExample": "{\n  \"username\": \"\",\n  \"ipAddress\": \"\",\n  \"password\": \"\"\n}"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "eb01011a-ea66-4faf-8d16-2f52de4a3d2e",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0a732d15-6641-403f-bcbc-c8b15b8fee74",
+      "name": "SSH",
+      "credentials": {
+        "sshPassword": {
+          "id": "1ftE2NjNfSrdktlJ",
+          "name": "SSH Password account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "SSH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0074e7f4-4015-48e1-9b64-bd74c8bbd248",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0d4d7765a24d4de56d5156cfda2249198ce4f0ce70e514009ea82e1c4766b22"
+  },
+  "id": "7ChQN6qeXeFDXO8R",
+  "tags": []
+}

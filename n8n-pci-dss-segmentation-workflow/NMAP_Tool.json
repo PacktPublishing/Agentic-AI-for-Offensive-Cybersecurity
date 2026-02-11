@@ -1,0 +1,215 @@
+{
+  "name": "NMAP Tool",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        -140
+      ],
+      "id": "c5406935-5a27-49bb-915a-4b25a5d02157",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -100,
+        -140
+      ],
+      "id": "731f3c2c-0bfa-4776-a573-80307fcf5cc4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "findOneAndUpdate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        -240
+      ],
+      "id": "71b65993-963c-4abf-bdd9-bfc8330c79c8",
+      "name": "MongoDB",
+      "credentials": {
+        "mongoDb": {
+          "id": "amquX4UlKtVPQEfD",
+          "name": "MongoDB cve database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "8fe826a0-d2af-424e-a02a-fb41413548ae",
+              "leftValue": "",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        340,
+        -140
+      ],
+      "id": "8c1fe4e9-b426-4b6b-8eac-c79d7f3e986d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        -140
+      ],
+      "id": "3f32c001-e230-483c-b2a1-aa056805a620",
+      "name": "MongoDB1",
+      "credentials": {
+        "mongoDb": {
+          "id": "amquX4UlKtVPQEfD",
+          "name": "MongoDB cve database"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        560,
+        -40
+      ],
+      "id": "402c93ae-5a04-4ceb-a036-de2e3673979e",
+      "name": "SSH",
+      "credentials": {
+        "sshPassword": {
+          "id": "1ftE2NjNfSrdktlJ",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        -40
+      ],
+      "id": "ec85128b-b266-4727-a872-8a53156edcc6",
+      "name": "MongoDB2",
+      "credentials": {
+        "mongoDb": {
+          "id": "amquX4UlKtVPQEfD",
+          "name": "MongoDB cve database"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "MongoDB1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "MongoDB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SSH",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MongoDB1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SSH": {
+      "main": [
+        [
+          {
+            "node": "MongoDB2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "97f00420-d8d4-43ba-85ea-be7999ad889a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0d4d7765a24d4de56d5156cfda2249198ce4f0ce70e514009ea82e1c4766b22"
+  },
+  "id": "NPFHBf5QFpUuETF9",
+  "tags": []
+}
