@@ -1,0 +1,210 @@
+{
+  "name": "IOC Collection",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "0faf3bc0-379a-4698-a047-6a770a240152",
+      "name": "Schedule Trigger",
+      "disabled": true
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        208
+      ],
+      "id": "8c565cbe-16fe-432d-b9f9-c0b75975847e",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "threat-intelligence",
+          "mode": "list",
+          "cachedResultName": "threat-intelligence"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        112
+      ],
+      "id": "a61041a3-0592-4ef6-a638-cd19ea185c39",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "OvOsfpGu3jNvJPnQ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        384,
+        336
+      ],
+      "id": "db2d10f9-6715-42c2-a400-e1921e68f8a2",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "5VDd362hpABYIrAx",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        336
+      ],
+      "id": "934e08c8-1db6-49be-8964-c04e534b2a0e",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "url": "https://otx.alienvault.com/api/v1/pulses/subscribed",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -16,
+        112
+      ],
+      "id": "4489376f-9d08-47b4-8244-163825714dc3",
+      "name": "OTX API",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7GUGHnFd541nxKYR",
+          "name": "AlienVault OTX"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const pulses = $input.first().json.results || [];\nconst allIOCs = [];\n\npulses.forEach((pulse) => {\n  const indicators = pulse.indicators || [];\n\n  indicators.forEach((indicator) => {\n    const categories = {\n      IPv4: \"network\",\n      IPv6: \"network\",\n      domain: \"network\",\n      hostname: \"network\",\n      URL: \"web\",\n      \"FileHash-MD5\": \"file\",\n      \"FileHash-SHA1\": \"file\",\n      \"FileHash-SHA256\": \"file\",\n      email: \"communication\",\n      CVE: \"vulnerability\",\n    };\n\n    const category = categories[indicator.type] || \"other\";\n\n    // TÜM BİLGİYİ TEK TEXT ALANINA KOY\n    const text = `\n  IOC INDICATOR: ${indicator.indicator}\n  TYPE: ${indicator.type}\n  CATEGORY: ${category}\n  CAMPAIGN: ${pulse.name}\n  DESCRIPTION: ${pulse.description || \"No description\"}\n  TAGS: ${pulse.tags?.join(\", \") || \"None\"}\n  MALWARE FAMILIES: ${pulse.malware_families?.join(\", \") || \"None\"}\n  COLLECTED: ${new Date().toISOString()}\n      `.trim();\n\n    allIOCs.push({\n      json: {\n        text: text,\n      },\n    });\n  });\n});\n\nreturn allIOCs;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        112
+      ],
+      "id": "7941d47f-27ab-48f3-acf9-c7957cc7a9af",
+      "name": "Parse IOCs"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "OTX API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "OTX API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OTX API": {
+      "main": [
+        [
+          {
+            "node": "Parse IOCs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse IOCs": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a02d24c8-795a-4385-9d6c-866fff81e848",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "33a6384be4595f666734840b1a2564f4ca97d56c3047e8f1501a8302d137aba7"
+  },
+  "id": "5oEStAk0uVpVp6eq",
+  "tags": []
+}

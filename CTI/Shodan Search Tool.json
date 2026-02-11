@@ -1,0 +1,104 @@
+{
+  "name": "Shodan Search Tool",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -304,
+        -48
+      ],
+      "id": "26c896e8-13ad-46b0-854b-61411517b30f",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst query = input.query || input.searchQuery || \"\";\n\nif (!query) {\n  return [{ json: { error: \"No search query provided\", results: [] } }];\n}\n\nreturn [{ json: { query: query, apiKey: \"2v4uPkYrAeCqrHWHnEvLWGPaDzmYbow4\" } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "9d497fe4-be18-466c-a03f-49a421f25a4b",
+      "name": "Query Extract"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.shodan.io/shodan/host/search?key={{ $json.apiKey }}&query={{ encodeURIComponent($json.query) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        112,
+        -48
+      ],
+      "id": "92e4c166-a0ac-42b4-be94-c3df17f1ff73",
+      "name": "Shodan API"
+    },
+    {
+      "parameters": {
+        "jsCode": "  const response = $input.first().json;\n\n  if (response.error) {\n    return [{ json: { success: false, error: response.error, total: 0, results: [] } }];\n  }\n\n  const results = (response.matches || []).slice(0, 10).map(match => ({\n    ip: match.ip_str,\n    port: match.port,\n    organization: match.org || 'Unknown',\n    country: match.location?.country_name || 'Unknown',\n    product: match.product || 'Unknown',\n    version: match.version || 'Unknown'\n  }));\n\n  return [{ json: { success: true, total: response.total || 0, results: results } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        -48
+      ],
+      "id": "558c05e8-37b4-4e6f-b489-4195e69708bc",
+      "name": "Format Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Query Extract",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Extract": {
+      "main": [
+        [
+          {
+            "node": "Shodan API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shodan API": {
+      "main": [
+        [
+          {
+            "node": "Format Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b885c3c4-c7be-4b35-be1d-0076ec32d6aa",
+  "meta": {
+    "instanceId": "33a6384be4595f666734840b1a2564f4ca97d56c3047e8f1501a8302d137aba7"
+  },
+  "id": "yHhypKYCAiuDQmjf",
+  "tags": []
+}

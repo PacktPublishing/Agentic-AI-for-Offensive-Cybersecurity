@@ -1,0 +1,545 @@
+{
+  "name": "Multi-feed Scraper",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1728,
+        -1024
+      ],
+      "id": "d241139c-f325-4dd9-8a26-60fd1afaf43f",
+      "name": "When clicking ‘Test workflow’"
+    },
+    {
+      "parameters": {
+        "amount": 2
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1984,
+        -768
+      ],
+      "id": "34fd25b5-6993-4efa-9cb3-e89b1a4541eb",
+      "name": "Wait",
+      "webhookId": "65d70847-dc9d-4b3b-aa91-9f5c946e1d63"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=\nAnalyze the following security advisory:\n\nTitle: {{ $('Normalize').item.json.title }}\nSource: {{ $('Normalize').item.json.source }} ({{ $('Normalize').item.json.sourceType }})\nURL: {{ $('Normalize').item.json.url }}\nPublished: {{ $('Normalize').item.json.publishedAt }}\nCVEs Found: {{ $('Normalize').item.json.cveIds }}\nInferred Severity: {{ $('Normalize').item.json.inferredSeverity }}\nSummary: {{ $('Normalize').item.json.summary }}\n\nProvide actionable recommendations for the security team.\n",
+        "options": {
+          "systemMessage": "=You are a security intelligence analyst. Your task is to analyze collected security advisories and provide actionable insights.\n\nFor each batch of intelligence items, provide:\n\n1. Critical Findings: List any vulnerabilities with critical or high severity that require immediate attention\n\n2. CVE Summary: List all CVE IDs found, grouped by severity\n\n3. Affected Products: Identify which vendors and products are affected\n\n4. Trends: Note any patterns across the advisories\n\n5. Recommended Actions: Provide 2-3 specific actions the security team should take\n\nKeep your analysis concise and actionable. Focus on what matters most for defenders."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.9,
+      "position": [
+        -1120,
+        -512
+      ],
+      "id": "7f427454-63e1-490c-83b7-614ecbd5c98a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1104,
+        -288
+      ],
+      "id": "838ac6f0-b7e9-4fb1-9140-f257d8ca614b",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "5VDd362hpABYIrAx",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=1",
+        "contextWindowLength": 2000
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -976,
+        -288
+      ],
+      "id": "8d392d40-c29e-4a99-8adc-6fa87976e39b",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+            {
+              "name": "Accept",
+              "value": "application/rss+xml, application/xml, text/xml, */*"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -976,
+        -1008
+      ],
+      "id": "0b773279-0790-4e0a-b802-77bc0c5df4c4",
+      "name": "Fetch RSS",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const xml = $input.first().json.data;\nconst feedInfo = $('Feed Loop').item.json;\n\n// Simple RSS item extraction using regex\nconst itemRegex = /<item>([\\s\\S]*?)<\\/item>/g;\nconst items = [];\nlet match;\n\nwhile ((match = itemRegex.exec(xml)) !== null) {\n  const itemXml = match[1];\n\n  const getTag = (tag) => {\n    const tagMatch = itemXml.match(new RegExp(`<${tag}[^>]*>([\\\\s\\\\S]*?)<\\\\/${tag}>`));\n    return tagMatch ? tagMatch[1].trim() : '';\n  };\n\n  items.push({\n    json: {\n      title: getTag('title').replace(/<!\\[CDATA\\[|\\]\\]>/g, ''),\n      link: getTag('link'),\n      pubDate: getTag('pubDate'),\n      description: getTag('description').replace(/<!\\[CDATA\\[|\\]\\]>/g, ''),\n      sourceName: feedInfo.name,\n      sourceType: feedInfo.type\n    }\n  });\n}\n\n// Limit to 5 items per feed\nreturn items.slice(0, 5);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        -1008
+      ],
+      "id": "c5f3f9fa-ec7c-4add-a4e3-db5643b845bf",
+      "name": "Parse RSS",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1072,
+        -800
+      ],
+      "id": "fd64c746-e656-4a86-b4a3-20d32776f397",
+      "name": "Item Loop"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1328,
+        -1024
+      ],
+      "id": "e84e916e-333c-4a65-a4d1-bdf63da5ec1a",
+      "name": "Feed Loop"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.link }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (compatible; SecurityResearchBot/1.0)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1792,
+        -768
+      ],
+      "id": "3f05aa2f-fa42-4075-92ef-e76744b2cceb",
+      "name": "Fetch Page",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "  // Get HTML from Fetch Page\n  const html = $input.first().json.data || $input.first().json.body || '';\n\n  // Get metadata from Wait node (with fallback)\n  let metadata = {};\n  try {\n    metadata = $('Wait').item.json || {};\n  } catch (e) {\n    metadata = $input.first().json || {};\n  }\n\n  // Extract title from HTML\n  function extractTitle(html) {\n    if (!html) return '';\n    const patterns = [\n      /<meta[^>]*property=\"og:title\"[^>]*content=\"([^\"]*)\"[^>]*>/i,\n      /<title>([^<]*)<\\/title>/i,\n      /<h1[^>]*>([^<]*)<\\/h1>/i\n    ];\n    for (const pattern of patterns) {\n      const match = html.match(pattern);\n      if (match) return match[1].trim();\n    }\n    return '';\n  }\n\n  // Extract content from HTML\n  function extractContent(html) {\n    if (!html) return '';\n    const patterns = [\n      /<article[^>]*>([\\s\\S]*?)<\\/article>/i,\n      /<main[^>]*>([\\s\\S]*?)<\\/main>/i,\n      /<div[^>]*class=\"[^\"]*content[^\"]*\"[^>]*>([\\s\\S]*?)<\\/div>/i\n    ];\n    for (const pattern of patterns) {\n      const match = html.match(pattern);\n      if (match) return match[1].replace(/<[^>]+>/g, ' ').replace(/\\s+/g, ' ').trim();\n    }\n    return '';\n  }\n\n  // Extract CVE IDs from text\n  function extractCVEs(text) {\n    if (!text) return [];\n    const matches = text.match(/CVE-\\d{4}-\\d{4,7}/gi) || [];\n    return [...new Set(matches.map(c => c.toUpperCase()))];\n  }\n\n  // Determine severity from keywords\n  function inferSeverity(text) {\n    if (!text) return 'unknown';\n    const lower = text.toLowerCase();\n    if (lower.includes('critical') || lower.includes('emergency')) return 'critical';\n    if (lower.includes('high') || lower.includes('important')) return 'high';\n    if (lower.includes('medium') || lower.includes('moderate')) return 'medium';\n    if (lower.includes('low')) return 'low';\n    return 'unknown';\n  }\n\n  const title = extractTitle(html) || metadata.title || 'Unknown';\n  const content = extractContent(html) || metadata.description || '';\n  const fullText = title + ' ' + content;\n\n  return [{\n    json: {\n      title: title,\n      source: metadata.sourceName || 'Unknown',\n      sourceType: metadata.sourceType || 'unknown',\n      url: metadata.link || '',\n      publishedAt: metadata.pubDate || new Date().toISOString(),\n      summary: content.substring(0, 500),\n      cveIds: extractCVEs(fullText),\n      inferredSeverity: inferSeverity(fullText),\n      collectedAt: new Date().toISOString()\n    }\n  }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1600,
+        -768
+      ],
+      "id": "51d26af5-edc6-4f67-b15a-0c763f26aaa1",
+      "name": "Normalize",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define feed sources\nconst feeds = [\n  {\n    name: \"CISA Advisories\",\n    url: \"https://www.cisa.gov/cybersecurity-advisories/all.xml\",\n    type: \"government\",\n  },\n  {\n    name: \"NIST NVD\",\n    url: \"https://nvd.nist.gov/feeds/xml/cve/misc/nvd-rss.xml\",\n    type: \"database\",\n  },\n  {\n    name: \"Exploit Database\",\n    url: \"https://www.exploit-db.com/rss.xml\",\n    type: \"exploits\",\n  },\n  {\n    name: \"Unit 42\",\n    url: \"https://unit42.paloaltonetworks.com/feed/\",\n    type: \"vendor\",\n  },\n  {\n    name: \"SentinelOne Labs\",\n    url: \"https://www.sentinelone.com/labs/feed/\",\n    type: \"vendor\",\n  },\n  {\n    name: \"Talos Intelligence\",\n    url: \"https://blog.talosintelligence.com/\",\n    type: \"vendor\",\n  },\n  {\n    name: 'PortSwigger Research',\n    url: 'https://portswigger.net/blog/rss',\n    type: 'vendor'\n  }\n];\n\nreturn feeds.map((feed) => ({ json: feed }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        -1024
+      ],
+      "id": "63d2f0b3-b875-4c97-bf3f-9e139695ba87",
+      "name": "Feed List"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "security_intel_raw",
+          "mode": "list",
+          "cachedResultName": "security_intel_raw"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -1376,
+        -768
+      ],
+      "id": "be23768d-adc5-4b2e-9a7d-169c9b0a98f1",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "OvOsfpGu3jNvJPnQ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1488,
+        -544
+      ],
+      "id": "76fe9f48-e1c7-44bf-8f68-956ddf961169",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "5VDd362hpABYIrAx",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -1344,
+        -544
+      ],
+      "id": "4d46fefb-1b18-4616-bd30-07cf33334004",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "security_intel_analysis",
+          "mode": "list",
+          "cachedResultName": "security_intel_analysis"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        -512
+      ],
+      "id": "0839385e-dfbb-4d3b-a173-19a3398c33c5",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "OvOsfpGu3jNvJPnQ",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        -288
+      ],
+      "id": "6e00a1f1-8f04-497b-b389-c292c4b52242",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "5VDd362hpABYIrAx",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        -288
+      ],
+      "id": "edf8735c-bcb4-4f4b-936c-492fec8c4c39",
+      "name": "Default Data Loader1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Test workflow’": {
+      "main": [
+        [
+          {
+            "node": "Feed List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fetch Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch RSS": {
+      "main": [
+        [
+          {
+            "node": "Parse RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse RSS": {
+      "main": [
+        [
+          {
+            "node": "Feed Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Item Loop": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feed Loop": {
+      "main": [
+        [
+          {
+            "node": "Item Loop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Page": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feed List": {
+      "main": [
+        [
+          {
+            "node": "Feed Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "ai_tool": [
+        []
+      ],
+      "main": [
+        [
+          {
+            "node": "Item Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c27c26cd-33c2-41ec-8d73-8a16c4c94e32",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "33a6384be4595f666734840b1a2564f4ca97d56c3047e8f1501a8302d137aba7"
+  },
+  "id": "qfck72c989UG4l98",
+  "tags": []
+}
