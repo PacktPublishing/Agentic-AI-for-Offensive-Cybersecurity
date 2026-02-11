@@ -1,0 +1,542 @@
+{
+  "name": "Recon Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Threat Intelligence ",
+        "formDescription": "Check the report history of any IP address to see if anyone else has reported malicious activities.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Check IP, Domain or URL"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -1620,
+        860
+      ],
+      "id": "7cbfc274-4770-4192-8def-8b0c33e71e33",
+      "name": "On form submission",
+      "webhookId": "b9b2ce2f-9f41-46a2-a888-e032b79b04d3"
+    },
+    {
+      "parameters": {
+        "url": "https://api.abuseipdb.com/api/v2/check",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "ipAddress",
+              "value": "={{ $json['Check IP, Domain or URL'] }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Key\": \"<YOUR_API_KEY>\",\n  \"Accept\": \"application/json\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1000,
+        -40
+      ],
+      "id": "48f387f2-5a9e-43a5-a66c-bbb9ba033c0f",
+      "name": "AbuseIPDB"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.virustotal.com/api/v3/ip_addresses/{{ $json['Check IP, Domain or URL'] }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"x-apikey\": \"<YOUR_API_KEY>\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1000,
+        180
+      ],
+      "id": "47a98c90-5dcb-4137-848f-b48c5168fe41",
+      "name": "VirusTotal"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.greynoise.io/v3/community/{{ $json['Check IP, Domain or URL'] }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"key\": \"<YOUR_API_KEY>\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1000,
+        360
+      ],
+      "id": "5e22b0c1-bc59-4339-bcf9-08e1c4be73bd",
+      "name": "GreyNoise"
+    },
+    {
+      "parameters": {
+        "url": "=https://otx.alienvault.com/api/v1/indicators/IPv4/{{ $json['Check IP, Domain or URL'] }}",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"X-OTX-API-KEY\": \"<YOUR_API_KEY>\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1000,
+        540
+      ],
+      "id": "7069f8ae-b853-4519-ad53-64a99c4eabab",
+      "name": "OTX (AlienVault Open Threat Exchange)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://urlscan.io/api/v1/scan/",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"API-Key\": \"<YOUR_API_KEY>\",\n  \"Content-Type\": \"application/json\"\n}\n",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\": \"{{ $json['Check IP, Domain or URL'] }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1080,
+        1080
+      ],
+      "id": "cdb59450-2fb5-4575-a42e-88ba53fc1444",
+      "name": "URLScan.io"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json['Check IP, Domain or URL'] }}",
+                    "rightValue": "^(\\d{1,3}\\.){3}\\d{1,3}$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    },
+                    "id": "bab3a07b-30e5-4664-a15f-61abfd2ae0d5"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c24eb651-4165-4bc5-ae7f-53fd06fdb8c7",
+                    "leftValue": "={{ $json['Check IP, Domain or URL'] }}",
+                    "rightValue": "^([a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0a197cfe-9d4f-4935-bf35-c25ea72cc8cc",
+                    "leftValue": "={{ $json['Check IP, Domain or URL'] }}",
+                    "rightValue": "^https?:\\/\\/",
+                    "operator": {
+                      "type": "string",
+                      "operation": "regex"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -1340,
+        860
+      ],
+      "id": "0d7932e4-6188-48a7-a386-552f3c16a5ac",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "content": "# IPs",
+        "height": 800,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1140,
+        -100
+      ],
+      "typeVersion": 1,
+      "id": "eda81510-7cde-4fa5-b4d3-ee01348951d3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# URLs",
+        "height": 280,
+        "width": 280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1160,
+        1020
+      ],
+      "typeVersion": 1,
+      "id": "c36d6475-067d-4ae9-8e2a-b0e34388b284",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# Domains",
+        "height": 540,
+        "width": 1820,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -700,
+        720
+      ],
+      "typeVersion": 1,
+      "id": "616b5cc7-cb62-4661-ab13-fdb7ab50ad91",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.securitytrails.com/v1/domain/{{ $json['Check IP, Domain or URL'] }}/subdomains",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"APIKEY\": \"<YOUR_API_KEY>\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -660,
+        840
+      ],
+      "id": "4abebb92-b1cb-4555-8455-1b464e777d71",
+      "name": "SecurityTrails",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const domain = $('On form submission').first().json[\"Check IP, Domain or URL\"]\nconst subs = $json[\"subdomains\"];\n\nreturn subs.map(sub => {\n  return {\n    json: {\n      fqdn: `${sub}.${domain}`\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        740
+      ],
+      "id": "137e9541-07e3-44e7-bd64-cfac00e03225",
+      "name": "FQDN"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"tr\">\n<head>\n  <meta charset=\"UTF-8\" />\n  <title>Recon Bot</title>\n  <style>\n    body {\n      font-family: Arial, sans-serif;\n      margin: 20px;\n      background-color: #f4f4f4;\n    }\n    h1 {\n      text-align: center;\n      color: #333;\n    }\n    table {\n      width: 100%;\n      border-collapse: collapse;\n      background-color: #fff;\n      box-shadow: 0 2px 5px rgba(0,0,0,0.1);\n      margin-top: 20px;\n    }\n    th, td {\n      padding: 12px 15px;\n      text-align: left;\n      border-bottom: 1px solid #ddd;\n    }\n    th {\n      background-color: #0073e6;\n      color: #fff;\n      text-transform: uppercase;\n      letter-spacing: 0.05em;\n      font-size: 14px;\n    }\n    tr:hover {\n      background-color: #f1f1f1;\n    }\n    .small {\n      font-size: 0.9em;\n      color: #555;\n    }\n  </style>\n</head>\n<body>\n  <h1>Recon Bot</h1>\n  <table>\n    <thead>\n      <tr>\n        <th>Subdomain</th>\n        <th>IP Address(es)</th>\n        <th>Organization</th>\n        <th>WAF</th>\n      </tr>\n    </thead>\n    <tbody>\n      {{(()=>{\n          const items = $items(\"Merge\");\n          const grouped = {};\n          items.forEach(item => {\n            const j = item.json;\n            const sub = j.subdomain;\n            const ip = j.ip;\n            const org = j.org || \"N/A\";\n            const waf = j.WAF || \"N/A\";\n            if (!sub) return;\n            if (!grouped[sub]) grouped[sub] = { ips: new Set(), org, waf };\n            if (ip && ip !== \"null\") grouped[sub].ips.add(ip);\n          });\n          return Object.entries(grouped).map(([sub, info]) => {\n            const ips = Array.from(info.ips).join(\", \") || \"N/A\";\n            const orgStr = info.org;\n            const wafStr = info.waf;\n            return `<tr><td>${sub}</td><td>${ips}</td><td>${orgStr}</td><td class=\"small\">${wafStr}</td></tr>`;\n          }).join(\"\");\n        })()}}\n    </tbody>\n  </table>\n</body>\n</html>\n"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        740
+      ],
+      "id": "b5fea85b-4065-4d67-837d-e37d495353b8",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -180,
+        740
+      ],
+      "id": "ffb51459-13bc-4792-b4a0-7740e5cbc9e0",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.shodan.io/shodan/host/{{ $json.ip }}?key=<YOUR_API_KEY>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        1040
+      ],
+      "id": "ee64d964-01f2-475b-a4f5-16772874719e",
+      "name": "Shodan",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1 saniye bekleyin (eğer gerçekten gerekli değilse bu satırı silebilirsiniz)\nawait new Promise(resolve => setTimeout(resolve, 1000));\n\nconst first = $input.first().json;\n\n// Eğer DNS yanıtı içinde \"Answer\" dizisi yoksa veya dizi değilse:\nif (!first.Answer || !Array.isArray(first.Answer)) {\n  // Eğer dışarıdan (örneğin bir Set node ile) gelmiş \"first.ip\" alanı varsa:\n  if (first.ip) {\n    return [\n      {\n        json: {\n          subdomain: first.subdomain || first.fqdn || null,\n          ip: first.ip\n        }\n      }\n    ];\n  }\n  // Ne DNS'den A kaydı ne de \"first.ip\" var → bu alt-domain için 'pass' geçsin:\n  // (Biz “ip:null” dönüyoruz ki downstream IF node’da “ip var mı?” kontrolüyle atlasın)\n  return [\n    {\n      json: {\n        subdomain: first.subdomain || first.fqdn || null,\n        ip: null\n      }\n    }\n  ];\n}\n\n// DNS yanıtında Answer dizisi varsa, her bir “ans.data” için ayrı bir ip öğesi üretiyoruz:\nreturn first.Answer\n  // opsiyonel: ans.data boş gelirse atlamak için filter ekleyebiliriz\n  .filter(ans => ans.data) \n  .map(ans => {\n    return {\n      json: {\n        subdomain: first.subdomain || first.fqdn || null,\n        ip: ans.data\n      }\n    };\n  });\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        1040
+      ],
+      "id": "674c1a2a-d3f6-47b8-94ab-f55ab51f679f",
+      "name": "Extract IPs",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "url": "=https://dns.google/resolve?name={{ $json.fqdn }}&type=A ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        1040
+      ],
+      "id": "4c00d92d-3c9f-4e5d-a7df-9ef0d439de24",
+      "name": "DNS Resolution"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"subdomain\": \"{{ $('DNS Resolution').item.json.Question[0].name}}\",\n  \"ip\": \"{{ $('Extract IPs').item.json.ip }}\",\n  \"org\": \"{{ $json.org }}\",\n  \"WAF\": \"{{ $json.data[0].http.waf }}\"\n  \n}\n ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        1040
+      ],
+      "id": "70c58c50-6407-441c-86f8-e48ef6259d54",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        620,
+        740
+      ],
+      "id": "3cd7be83-ddfb-4aa2-8dde-cf5acf00cb71",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "AbuseIPDB",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "VirusTotal",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GreyNoise",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "OTX (AlienVault Open Threat Exchange)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SecurityTrails",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "URLScan.io",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SecurityTrails": {
+      "main": [
+        [
+          {
+            "node": "FQDN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "FQDN": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "DNS Resolution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shodan": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract IPs": {
+      "main": [
+        [
+          {
+            "node": "Shodan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DNS Resolution": {
+      "main": [
+        [
+          {
+            "node": "Extract IPs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "29257ba0-6e05-4a53-90cc-c7fb97e157e6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b0d4d7765a24d4de56d5156cfda2249198ce4f0ce70e514009ea82e1c4766b22"
+  },
+  "id": "hNwn1Q04TXX6oVsb",
+  "tags": []
+}
